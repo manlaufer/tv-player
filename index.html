@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TV Player</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='4' width='56' height='56' rx='14' fill='%23080A0F' stroke='%2338BDF8' stroke-width='3'/%3E%3Cpolygon points='25,19 47,32 25,45' fill='%2338BDF8'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css?v=tactical3d">
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
+</head>
+<body>
+  <div id="app" class="app-root">
+    <!-- Full-screen Video Stage -->
+    <main id="playerStage" class="player-stage">
+      <video id="videoPlayer" playsinline autoplay preload="metadata"></video>
+
+      <!-- Loading / Buffering Overlay -->
+      <div id="loadingOverlay" class="loading-overlay hidden" aria-live="polite">
+        <div class="spinner"></div>
+        <div id="loadingText" class="loading-text">Connecting to stream...</div>
+        <div id="buffer-percent" class="buffer-percent">0%</div>
+      </div>
+
+      <!-- Non-intrusive Tactical 3D Background Stage -->
+      <div id="tacticalStageLayer" class="tactical-stage-layer" aria-hidden="true">
+          <canvas id="tacticalFxCanvas" class="tactical-fx-canvas"></canvas>
+          <span class="hud-corner hud-corner-tl"></span>
+          <span class="hud-corner hud-corner-tr"></span>
+          <span class="hud-corner hud-corner-bl"></span>
+          <span class="hud-corner hud-corner-br"></span>
+          <div id="tacticalPropStage" class="tactical-prop-stage">
+            <!-- 1. Live TV: Satellite Dish with Radar Waves -->
+            <div class="tactical-prop is-active" data-prop="live">
+              <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="dishGrad" x1="30" y1="30" x2="140" y2="140" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.35"/>
+                    <stop offset="100%" stop-color="#0F172A" stop-opacity="0.85"/>
+                  </linearGradient>
+                </defs>
+                <path class="radar-wave radar-wave-1" d="M112 40C128 44 140 56 144 72" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round"/>
+                <path class="radar-wave radar-wave-2" d="M118 26C141 32 158 49 164 72" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" opacity="0.65"/>
+                <path class="radar-wave radar-wave-3" d="M124 14C153 22 172 41 176 70" stroke="#7DD3FC" stroke-width="1.4" stroke-linecap="round" opacity="0.4"/>
+                <path d="M38 148L72 110L106 148H38Z" fill="#0F172A" stroke="#38BDF8" stroke-width="2" stroke-linejoin="round"/>
+                <line x1="72" y1="110" x2="72" y2="148" stroke="#38BDF8" stroke-width="2"/>
+                <path d="M40 52C32 82 48 114 78 122C108 130 132 114 140 84L40 52Z" fill="url(#dishGrad)" stroke="#38BDF8" stroke-width="2.5" stroke-linejoin="round"/>
+                <line x1="88" y1="88" x2="112" y2="54" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"/>
+                <circle cx="114" cy="52" r="5" fill="#38BDF8"/>
+              </svg>
+            </div>
+
+            <!-- 2. Catch-up: Reverse Time-Shift Chronometer Clock -->
+            <div class="tactical-prop" data-prop="catchup">
+              <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="90" cy="92" r="52" fill="#0F172A" stroke="#38BDF8" stroke-width="2.5"/>
+                <path d="M52 44A62 62 0 1 1 32 104" stroke="#7DD3FC" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="6 5"/>
+                <polyline points="24,96 32,108 42,98" stroke="#38BDF8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="90" cy="92" r="40" stroke="#38BDF8" stroke-width="1.2" stroke-opacity="0.35"/>
+                <line class="clock-hand-min" x1="90" y1="92" x2="90" y2="58" stroke="#F8FAFC" stroke-width="2.8" stroke-linecap="round" style="transform-origin: 90px 92px;"/>
+                <line class="clock-hand-sec" x1="90" y1="92" x2="118" y2="92" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" style="transform-origin: 90px 92px;"/>
+                <circle cx="90" cy="92" r="4.5" fill="#38BDF8"/>
+              </svg>
+            </div>
+
+            <!-- 5. Favorites: Golden Star Crest -->
+            <div class="tactical-prop" data-prop="favorites">
+              <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="90" cy="90" r="58" stroke="#FBBF24" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.5"/>
+                <polygon class="star-crest" points="90,32 107,68 147,73 118,101 125,141 90,122 55,141 62,101 33,73 73,68" fill="rgba(251,191,36,0.22)" stroke="#FBBF24" stroke-width="2.8" stroke-linejoin="round"/>
+                <polygon points="90,52 100,74 124,77 107,94 111,118 90,106 69,118 73,94 56,77 80,74" fill="rgba(251,191,36,0.35)"/>
+              </svg>
+            </div>
+
+            <!-- 6. Telegram: Gliding 3D Origami Paper Jet -->
+            <div class="tactical-prop" data-prop="telegram">
+              <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="paper-jet">
+                  <polygon points="28,92 152,38 118,144 84,110" fill="rgba(56,189,248,0.22)" stroke="#38BDF8" stroke-width="2.5" stroke-linejoin="round"/>
+                  <polygon points="152,38 84,110 92,138 118,144" fill="rgba(14,165,233,0.35)" stroke="#7DD3FC" stroke-width="2" stroke-linejoin="round"/>
+                  <line x1="84" y1="110" x2="152" y2="38" stroke="#F8FAFC" stroke-width="1.8" stroke-opacity="0.7"/>
+                </g>
+              </svg>
+            </div>
+
+            <!-- 7. Network: 3D NAS Server Rack with Blinking LEDs -->
+            <div class="tactical-prop" data-prop="network">
+              <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="42" y="34" width="96" height="112" rx="10" fill="#0F172A" stroke="#38BDF8" stroke-width="2.5"/>
+                <rect x="52" y="46" width="76" height="24" rx="4" fill="#1E293B" stroke="#38BDF8" stroke-width="1.6"/>
+                <rect x="52" y="78" width="76" height="24" rx="4" fill="#1E293B" stroke="#38BDF8" stroke-width="1.6"/>
+                <rect x="52" y="110" width="76" height="24" rx="4" fill="#1E293B" stroke="#38BDF8" stroke-width="1.6"/>
+                <circle class="nas-led nas-led-1" cx="64" cy="58" r="3.5" fill="#38BDF8"/>
+                <circle class="nas-led nas-led-2" cx="76" cy="58" r="3.5" fill="#34D399"/>
+                <circle class="nas-led nas-led-3" cx="64" cy="90" r="3.5" fill="#38BDF8"/>
+                <circle class="nas-led nas-led-4" cx="76" cy="90" r="3.5" fill="#FBBF24"/>
+                <circle class="nas-led nas-led-5" cx="64" cy="122" r="3.5" fill="#34D399"/>
+                <line x1="92" y1="58" x2="118" y2="58" stroke="#64748B" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="92" y1="90" x2="118" y2="90" stroke="#64748B" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="92" y1="122" x2="118" y2="122" stroke="#64748B" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+
+            <!-- 8. Setup: Dual Interlocking Precision Gears -->
+            <div class="tactical-prop" data-prop="setup">
+              <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <g class="gear-primary" style="transform-origin: 72px 82px;">
+                  <circle cx="72" cy="82" r="28" fill="#0F172A" stroke="#38BDF8" stroke-width="2.5"/>
+                  <circle cx="72" cy="82" r="10" stroke="#38BDF8" stroke-width="2.2"/>
+                  <path d="M72 44V52M72 112V120M34 82H42M102 82H110M45 55L51 61M93 103L99 109M99 55L93 61M51 103L45 109" stroke="#38BDF8" stroke-width="4.5" stroke-linecap="round"/>
+                </g>
+                <g class="gear-secondary" style="transform-origin: 120px 116px;">
+                  <circle cx="120" cy="116" r="20" fill="#0F172A" stroke="#7DD3FC" stroke-width="2.2"/>
+                  <circle cx="120" cy="116" r="7" stroke="#7DD3FC" stroke-width="2"/>
+                  <path d="M120 88V94M120 138V144M92 116H98M142 116H148M100 96L105 101M135 131L140 136M140 96L135 101M105 131L100 136" stroke="#7DD3FC" stroke-width="3.8" stroke-linecap="round"/>
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+      <!-- Empty / Error State Overlay -->
+      <div id="emptyStateOverlay" class="empty-overlay">
+        <div class="empty-card">
+          <div class="brand-badge">TV PLAYER</div>
+          <h1 id="emptyTitle">Ready to Watch</h1>
+          <p id="emptySubtitle">Load an M3U playlist, connect with Xtream Codes, or import a local M3U file to get started.</p>
+          <div class="empty-actions">
+            <button id="emptySetupBtn" class="btn btn-primary focusable" tabindex="0">Open Playlist Setup</button>
+            <button id="emptyChannelsBtn" class="btn btn-secondary focusable hidden" tabindex="0">Browse Channels</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Numeric Channel Entry OSD -->
+      <div id="channelNumberEntry" class="channel-number-entry hidden"></div>
+
+      <!-- Live DVR Recording Badge -->
+      <div id="recIndicator" class="rec-indicator hidden" aria-live="polite">
+        <span class="rec-dot"></span>
+        <span id="recTimerText">REC 00:00</span>
+      </div>
+
+      <!-- Real-Time Stream Diagnostics OSD -->
+      <aside id="diagnosticsPanel" class="diagnostics-panel hidden" aria-label="Stream Diagnostics">
+        <div class="diag-title">STREAM DIAGNOSTICS</div>
+        <div class="diag-grid">
+          <span>Connection</span><strong id="diagConn">Idle</strong>
+          <span>Resolution</span><strong id="diagRes">--</strong>
+          <span>Bitrate</span><strong id="diagBitrate">--</strong>
+          <span>Frame Rate</span><strong id="diagFps">--</strong>
+          <span>Buffer</span><strong id="diagBuffer">--</strong>
+          <span>Dropped</span><strong id="diagDropped">0</strong>
+        </div>
+      </aside>
+
+      <!-- Top HUD Bar (Auto-hides with OSD) -->
+      <header id="topBar" class="top-bar osd-element">
+        <div class="top-bar-left">
+          <span class="app-logo" style="display:inline-flex;align-items:center;gap:0.45rem;"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" style="width:1.15rem;height:1.15rem;color:#38bdf8;"><rect x="2" y="3" width="20" height="18" rx="4" fill="#0d1117" stroke="#38bdf8" stroke-width="1.8"></rect><polygon points="10 8 16 12 10 16 10 8" fill="#38bdf8"></polygon></svg><span>TV <strong>PLAYER</strong></span></span>
+          <span id="playlistBadge" class="pill-badge">No Playlist</span>
+        </div>
+        <div class="top-bar-actions">
+          <button id="btnOpenChannels" class="hud-btn focusable" tabindex="0" title="Channel List (Enter)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><circle cx="4" cy="6" r="1"></circle><circle cx="4" cy="12" r="1"></circle><circle cx="4" cy="18" r="1"></circle></svg><span>Channels</span></button>
+          <button id="btnOpenGuide" class="hud-btn focusable" tabindex="0" title="TV Guide (G)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="9" y1="4" x2="9" y2="20"></line></svg><span>TV Guide</span></button>
+          <button id="btnOpenSettings" class="hud-btn focusable" tabindex="0" title="Settings (S)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg><span>Setup</span></button>
+          <button id="btnFullscreen" class="hud-btn focusable" tabindex="0" title="Toggle Fullscreen (F11)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg><span>Fullscreen</span></button>
+          <button id="btnExitApp" class="hud-btn hud-btn-danger focusable" tabindex="0" title="Exit Application"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span>Exit</span></button>
+          <div id="clockDisplay" class="clock-display">--:--</div>
+        </div>
+      </header>
+
+      <!-- Bottom OSD Info Bar -->
+      <section id="osdBar" class="osd-bar osd-element">
+        <div class="osd-main">
+          <div class="osd-channel-box">
+            <div id="osdLogoWrap" class="osd-logo-wrap">
+              <img id="osdLogo" src="" alt="" class="hidden">
+              <span id="osdLogoFallback" class="logo-fallback">TV</span>
+            </div>
+            <div class="osd-channel-meta">
+              <div class="osd-channel-title-row">
+                <span id="osdNumber" class="osd-number">000</span>
+                <h2 id="osdName" class="osd-name">No Channel Selected</h2>
+                <span id="osdCategory" class="pill-badge">Uncategorized</span>
+                <span id="osdStreamMeta" class="pill-badge pill-accent">LIVE</span>
+              </div>
+              <div class="osd-epg-row">
+                <div class="osd-now">
+                  <span class="epg-label">NOW</span>
+                  <span id="osdNowTitle" class="epg-title">No program information</span>
+                  <span id="osdNowTime" class="epg-time"></span>
+                </div>
+                <div id="osdProgressTrack" class="osd-progress-track">
+                  <div id="osdProgressFill" class="osd-progress-fill" style="width: 0%;"></div>
+                </div>
+                <div id="osdSeekRow" class="osd-seek-row hidden">
+                  <span id="osdCurrentTime" class="epg-time">00:00</span>
+                  <input id="osdSeekBar" type="range" class="osd-seek-bar focusable" min="0" max="100" step="0.1" value="0" tabindex="0" aria-label="Seek timeline">
+                  <span id="osdTotalTime" class="epg-time">00:00</span>
+                </div>
+                <div class="osd-next">
+                  <span class="epg-label muted">NEXT</span>
+                  <span id="osdNextTitle" class="epg-title muted">--</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="osd-controls">
+            <div class="osd-primary-controls">
+              <button id="osdPrevBtn" class="icon-btn focusable" tabindex="0" title="Previous Channel (PageDown)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="19 20 9 12 19 4 19 20"></polygon><line x1="5" y1="19" x2="5" y2="5"></line></svg><span>Prev</span></button>
+              <button id="osdPlayPauseBtn" class="icon-btn focusable" tabindex="0" title="Play / Pause (Space)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg><span>Pause</span></button>
+              <button id="osdStopBtn" class="icon-btn focusable" tabindex="0" title="Stop Playback"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1"></rect></svg><span>Stop</span></button>
+              <button id="osdNextBtn" class="icon-btn focusable" tabindex="0" title="Next Channel (PageUp)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="5 4 15 12 5 20 5 4"></polygon><line x1="19" y1="5" x2="19" y2="19"></line></svg><span>Next</span></button>
+              <button id="osdGuideBtn" class="icon-btn focusable" tabindex="0" title="Channel TV Guide (G)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="9" y1="4" x2="9" y2="20"></line></svg><span>TV Guide</span></button>
+              <button id="btnOsdSplitGuide" class="icon-btn focusable" tabindex="0" title="Toggle Split-Screen TV Guide"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><line x1="11" y1="4" x2="11" y2="20"></line><line x1="5.5" y1="8" x2="8.5" y2="8"></line><line x1="5.5" y1="12" x2="8.5" y2="12"></line><line x1="5.5" y1="16" x2="8.5" y2="16"></line></svg><span>Split Guide</span></button>
+              <button id="osdFavBtn" class="icon-btn focusable" tabindex="0" title="Toggle Favorite (F)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg><span>Favorite</span></button>
+              <button id="osdMuteBtn" class="icon-btn focusable" tabindex="0" title="Mute / Unmute (M)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg><span>Mute</span></button>
+              <button id="osdFullscreenBtn" class="icon-btn focusable" tabindex="0" title="Toggle Fullscreen (F11)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg><span>Fullscreen</span></button>
+            </div>
+            <div class="osd-secondary-controls">
+              <select id="osdAudioSelect" class="osd-select focusable" tabindex="0" title="Audio Track" aria-label="Audio Track">
+                <option value="-1">Audio: Default</option>
+              </select>
+              <select id="osdSubSelect" class="osd-select focusable" tabindex="0" title="Subtitles / CC" aria-label="Subtitles">
+                <option value="-1">CC: Off</option>
+              </select>
+              <button id="osdSubLoadBtn" class="icon-btn focusable" tabindex="0" title="Load External Subtitle (.srt / .vtt)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><line x1="7" y1="15" x2="13" y2="15"></line><line x1="15" y1="15" x2="17" y2="15"></line></svg><span>+Sub</span></button>
+              <input id="osdSubFileInput" type="file" accept=".srt,.vtt" class="hidden">
+              <button id="osdSubDelayMinusBtn" class="icon-btn btn-sm focusable hidden" tabindex="0" title="Subtitle Delay -100ms">-100ms</button>
+              <span id="osdSubDelayLabel" class="pill-badge hidden">0ms</span>
+              <button id="osdSubDelayPlusBtn" class="icon-btn btn-sm focusable hidden" tabindex="0" title="Subtitle Delay +100ms">+100ms</button>
+              <button id="osdAspectBtn" class="icon-btn focusable" tabindex="0" title="Cycle Aspect Ratio (A)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"></rect><polyline points="7 15 7 11 11 11"></polyline><polyline points="17 9 17 13 13 13"></polyline></svg><span>Fit: Contain</span></button>
+              <button id="osdRecordBtn" class="icon-btn focusable" tabindex="0" title="Record Stream (R)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3" fill="currentColor"></circle></svg><span>Record</span></button>
+              <button id="osdStatsBtn" class="icon-btn focusable" tabindex="0" title="Stream Diagnostics (D)"><svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg><span>Stats</span></button>
+            </div>
+          </div>
+        </div>
+        <div class="osd-hints">
+          <span><strong>Enter</strong> Browse</span>
+          <span><strong>Up/Down</strong> Zap Channel</span>
+          <span><strong>G</strong> TV Guide</span>
+          <span><strong>R</strong> Record</span>
+          <span><strong>D</strong> Stats</span>
+          <span><strong>A</strong> Aspect</span>
+          <span><strong>F</strong> Favorite</span>
+          <span><strong>I</strong> Info</span>
+          <span><strong>M</strong> Mute</span>
+          <span><strong>S</strong> Setup</span>
+          <span><strong>0-9</strong> Channel #</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- Slide-out Channel & Content Drawer -->
+    <aside id="channelDrawer" class="channel-drawer hidden" aria-hidden="true">
+      <div class="drawer-header">
+        <h2>Browse Content</h2>
+        <div class="drawer-header-right">
+          <span id="drawerChannelCount" class="pill-badge">0 items</span>
+          <button id="btnCloseDrawer" class="btn btn-secondary btn-sm focusable" tabindex="0">Close</button>
+        </div>
+      </div>
+      <div id="contentModeTabs" class="drawer-mode-tabs" role="tablist">
+        <button class="tab-btn active focusable" data-mode="live" tabindex="0">Live TV</button>
+        <button class="tab-btn focusable" data-mode="catchup" tabindex="0">Catch-up</button>
+        <button class="tab-btn focusable" data-mode="favorites" tabindex="0">Favorites</button>
+        <button class="tab-btn focusable" data-mode="telegram" tabindex="0">Telegram</button>
+        <button class="tab-btn focusable" data-mode="netshare" tabindex="0">Network Folders</button>
+      </div>
+      <div id="seriesBackBar" class="series-back-bar hidden">
+        <button id="btnSeriesBack" class="btn btn-secondary btn-sm focusable" tabindex="0">Back to Series</button>
+        <span id="seriesBackTitle" class="pill-badge pill-accent">Series</span>
+      </div>
+      <div id="telegramBackBar" class="series-back-bar hidden">
+        <button id="btnTelegramBack" class="btn btn-secondary btn-sm focusable" tabindex="0">Back to Channels</button>
+        <span id="telegramBackTitle" class="pill-badge pill-accent" dir="auto">Telegram</span>
+      </div>
+      <div id="netshareBackBar" class="series-back-bar hidden">
+        <button id="btnNetshareBack" class="btn btn-secondary btn-sm focusable" tabindex="0">Back</button>
+        <span id="netshareBackTitle" class="pill-badge pill-accent" dir="auto">Network Folders</span>
+      </div>
+      <div class="drawer-search-wrap">
+        <input id="channelSearchInput" type="search" class="tv-input focusable" placeholder="Search channels, movies, or series... (Press /)" autocomplete="off">
+      </div>
+      <div id="favFolderBar" class="fav-folder-bar hidden" aria-label="Favorite Folders"></div>
+      <div class="drawer-body">
+        <nav id="categoryList" class="category-list" aria-label="Content Categories"></nav>
+        <div id="channelList" class="channel-list" aria-label="Content List"></div>
+      </div>
+    </aside>
+
+    <!-- Active Channel Timeline & Catch-up Guide Modal -->
+    <section id="channelGuideModal" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="ch-guide-panel">
+        <div class="ch-guide-header">
+          <div class="ch-guide-title-wrap">
+            <h2 id="chGuideChannelName" dir="auto">Channel TV Guide</h2>
+            <span id="chGuideRangeBadge" class="pill-badge">7-Day Catch-up &amp; Schedule</span>
+          </div>
+          <div class="fav-folder-row-actions">
+            <button id="chGuideLiveBtn" class="btn btn-secondary btn-sm focusable" tabindex="0">Watch Live</button>
+            <button id="chGuideFullGridBtn" class="btn btn-secondary btn-sm focusable" tabindex="0">All Channels</button>
+            <button id="chGuideCloseBtn" class="btn btn-primary btn-sm focusable" tabindex="0">Close</button>
+          </div>
+        </div>
+        <div id="chGuideDayBar" class="epg-day-bar" role="tablist" aria-label="7-Day Schedule Selector"></div>
+        <div id="chGuideList" class="ch-guide-list" aria-label="Channel Schedule"></div>
+      </div>
+    </section>
+
+    <!-- XMLTV EPG Grid Overlay -->
+    <section id="epgOverlay" class="epg-overlay hidden" aria-hidden="true">
+      <header class="epg-header">
+        <div class="epg-header-left">
+          <h2>TV Guide</h2>
+          <span id="epgDateLabel" class="pill-badge">Today</span>
+        </div>
+        <div class="epg-header-controls">
+          <button id="epgPrevWindowBtn" class="btn btn-secondary btn-sm focusable" tabindex="0">-2 Hours</button>
+          <button id="epgNowBtn" class="btn btn-secondary btn-sm focusable" tabindex="0">Now</button>
+          <button id="epgNextWindowBtn" class="btn btn-secondary btn-sm focusable" tabindex="0">+2 Hours</button>
+          <button id="btnCloseEpg" class="btn btn-primary btn-sm focusable" tabindex="0">Close</button>
+        </div>
+      </header>
+
+      <div id="epgDayBar" class="epg-day-bar" role="tablist" aria-label="7-Day EPG Selector"></div>
+
+      <div id="epgDetailBanner" class="epg-detail-banner">
+        <div class="epg-detail-info">
+          <div class="epg-detail-meta">
+            <span id="epgDetailChannel" class="pill-badge pill-accent">Select a program</span>
+            <span id="epgDetailTime" class="epg-time"></span>
+          </div>
+          <h3 id="epgDetailTitle">Program Guide</h3>
+          <p id="epgDetailDesc">Use arrow keys to browse programs and press Enter to tune to the channel.</p>
+        </div>
+        <div class="epg-detail-actions">
+          <label class="epg-autotune-label">
+            <input id="epgReminderAutoTune" type="checkbox" class="tv-checkbox focusable" checked>
+            <span>Auto-Tune</span>
+          </label>
+          <button id="epgReminderBtn" class="btn btn-secondary focusable" tabindex="0">Set Reminder</button>
+          <button id="epgWatchBtn" class="btn btn-primary focusable" tabindex="0">Watch Channel</button>
+        </div>
+      </div>
+
+      <div id="epgGridViewport" class="epg-grid-viewport">
+        <div id="epgGrid" class="epg-grid"></div>
+      </div>
+    </section>
+
+    <!-- Left-Side Split-Screen TV Guide Panel (Video plays unobstructed on the right) -->
+    <aside id="splitGuidePanel" class="split-guide-panel hidden" aria-hidden="true" aria-label="Split-Screen TV Guide">
+      <div class="split-guide-header">
+        <div class="split-guide-title-wrap">
+          <h2>Split-Screen Guide</h2>
+          <span id="splitGuideChannelBadge" class="pill-badge pill-accent" dir="auto">Live TV</span>
+        </div>
+        <button id="btnCloseSplitGuide" class="btn btn-secondary btn-sm focusable" tabindex="0">Close</button>
+      </div>
+      <div id="splitGuideDayBar" class="split-guide-days" role="tablist" aria-label="7-Day Split Guide Selector"></div>
+      <div id="splitGuideList" class="split-guide-list" aria-label="Split Guide Schedule"></div>
+    </aside>
+
+    <!-- Playlist & Settings Modal -->
+    <section id="settingsModal" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="modal-panel">
+        <header class="modal-header">
+          <h2>Playlist &amp; Player Setup</h2>
+          <button id="btnCloseSettings" class="btn btn-secondary btn-sm focusable" tabindex="0">Close</button>
+        </header>
+
+        <div id="settingsTabs" class="modal-tabs" role="tablist">
+          <button class="tab-btn active focusable" data-tab="tabM3u" tabindex="0">M3U Playlist</button>
+          <button class="tab-btn focusable" data-tab="tabXtream" tabindex="0">Xtream Codes</button>
+          <button class="tab-btn focusable" data-tab="tabProfiles" tabindex="0">Profiles</button>
+          <button class="tab-btn focusable" data-tab="tabEpg" tabindex="0">XMLTV EPG</button>
+          <button class="tab-btn focusable" data-tab="tabParental" tabindex="0">Parental PIN</button>
+          <button class="tab-btn focusable" data-tab="tabPrefs" tabindex="0">Preferences</button>
+          <button class="tab-btn focusable" data-tab="tabControls" tabindex="0">Controls</button>
+          <button class="tab-btn focusable" data-tab="tabTelegram" tabindex="0">Telegram</button>
+          <button class="tab-btn focusable" data-tab="tabNetShare" tabindex="0">Network Folders</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- M3U Tab -->
+          <div id="tabM3u" class="tab-pane active">
+            <div class="sources-section">
+              <div class="sources-header">
+                <label>Configured Sources</label>
+                <span id="sourcesCountBadge" class="pill-badge">0 sources</span>
+              </div>
+              <div id="configuredSourcesList" class="configured-sources-list"></div>
+            </div>
+            <div class="divider"><span>ADD OR REPLACE M3U SOURCE</span></div>
+            <div class="form-group">
+              <label for="m3uUrlInput">M3U / M3U8 / IPTV Playlist URL</label>
+              <input id="m3uUrlInput" type="url" class="tv-input focusable" placeholder="https://example.com/playlist.m3u or get.php?...">
+            </div>
+            <div class="form-group">
+              <label for="m3uUserAgentInput">Custom User-Agent (Optional)</label>
+              <input id="m3uUserAgentInput" type="text" class="tv-input focusable" placeholder="VLC/3.0.20 LibVLC/3.0.20">
+            </div>
+            <div class="form-actions">
+              <button id="loadM3uUrlBtn" class="btn btn-primary focusable" tabindex="0">Load URL</button>
+            </div>
+            <div class="divider"><span>OR IMPORT LOCAL FILE</span></div>
+            <div class="form-group">
+              <label for="m3uFileInput">Select Local M3U File (.m3u, .m3u8)</label>
+              <input id="m3uFileInput" type="file" accept=".m3u,.m3u8,.txt" class="tv-file-input focusable">
+            </div>
+          </div>
+
+          <!-- Xtream Codes Tab -->
+          <div id="tabXtream" class="tab-pane">
+            <div class="form-group">
+              <label for="xtreamUrlInput">Server URL</label>
+              <input id="xtreamUrlInput" type="url" class="tv-input focusable" placeholder="http://provider.example.com:8080">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="xtreamUserInput">Username</label>
+                <input id="xtreamUserInput" type="text" class="tv-input focusable" placeholder="Username">
+              </div>
+              <div class="form-group">
+                <label for="xtreamPassInput">Password</label>
+                <input id="xtreamPassInput" type="password" class="tv-input focusable" placeholder="Password">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="xtreamFormatSelect">Stream Format</label>
+              <select id="xtreamFormatSelect" class="tv-input focusable">
+                <option value="m3u8">HLS (.m3u8) - Recommended</option>
+                <option value="ts">MPEG-TS (.ts)</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button id="loadXtreamBtn" class="btn btn-primary focusable" tabindex="0">Connect Xtream Codes</button>
+            </div>
+          </div>
+
+          <!-- Profiles Tab -->
+          <div id="tabProfiles" class="tab-pane">
+            <div class="form-group">
+              <label for="profileNameInput">Save Current Source as Profile</label>
+              <input id="profileNameInput" type="text" class="tv-input focusable" placeholder="e.g. Living Room M3U or Provider Main">
+            </div>
+            <div class="form-group">
+              <label for="profileEpgOverrideInput">Custom EPG URL Override (Optional)</label>
+              <input id="profileEpgOverrideInput" type="url" class="tv-input focusable" placeholder="https://example.com/custom-epg.xml">
+            </div>
+            <div class="form-actions">
+              <button id="saveProfileBtn" class="btn btn-primary focusable" tabindex="0">Save Profile</button>
+            </div>
+            <div class="divider"><span>SAVED PROFILES (SINGLE ACTIVE CONNECTION)</span></div>
+            <div id="profileList" class="profile-list"></div>
+          </div>
+
+          <!-- XMLTV EPG Tab -->
+          <div id="tabEpg" class="tab-pane">
+            <div class="form-group">
+              <label for="epgUrlInput">XMLTV EPG URL</label>
+              <input id="epgUrlInput" type="url" class="tv-input focusable" placeholder="https://example.com/epg.xml">
+            </div>
+            <div class="form-actions">
+              <button id="loadEpgUrlBtn" class="btn btn-primary focusable" tabindex="0">Load EPG URL</button>
+            </div>
+            <div class="divider"><span>OR IMPORT LOCAL XMLTV FILE</span></div>
+            <div class="form-group">
+              <label for="epgFileInput">Select Local XMLTV File (.xml)</label>
+              <input id="epgFileInput" type="file" accept=".xml" class="tv-file-input focusable">
+            </div>
+            <p id="epgSummaryText" class="helper-text">No EPG data loaded.</p>
+          </div>
+
+          <!-- Parental PIN Tab -->
+          <div id="tabParental" class="tab-pane">
+            <div class="form-group">
+              <label for="pinSetupInput">4-Digit Parental PIN</label>
+              <input id="pinSetupInput" type="password" inputmode="numeric" maxlength="4" pattern="\d{4}" class="tv-input focusable" placeholder="Enter 4 digits (e.g. 1234)">
+            </div>
+            <div class="form-actions">
+              <button id="savePinBtn" class="btn btn-primary focusable" tabindex="0">Save PIN</button>
+              <button id="clearPinBtn" class="btn btn-secondary focusable" tabindex="0">Disable PIN Lock</button>
+            </div>
+            <p id="pinStatusText" class="helper-text">Parental PIN is not configured.</p>
+            <div class="divider"><span>LOCKED CATEGORIES</span></div>
+            <div id="lockedCategoriesList" class="locked-cats-list"></div>
+          </div>
+
+          <!-- Preferences Tab -->
+          <div id="tabPrefs" class="tab-pane">
+            <div class="form-group checkbox-row">
+              <label for="prefUseProxy">Route streams &amp; playlists through local PowerShell CORS relay (/proxy)</label>
+              <input id="prefUseProxy" type="checkbox" class="tv-checkbox focusable" checked>
+            </div>
+            <div class="form-group">
+              <label for="prefOsdTimeout">OSD Auto-Hide Delay (seconds)</label>
+              <select id="prefOsdTimeout" class="tv-input focusable">
+                <option value="3000" selected>3 seconds</option>
+                <option value="5000">5 seconds</option>
+                <option value="8000">8 seconds</option>
+                <option value="12000">12 seconds</option>
+              </select>
+            </div>
+            <div class="divider"><span>BACKUP &amp; RESTORE (JSON)</span></div>
+            <div class="form-actions">
+              <button id="exportBackupBtn" class="btn btn-secondary focusable" tabindex="0">Export Settings &amp; Favorites (.json)</button>
+            </div>
+            <div class="form-group">
+              <label for="importBackupInput">Import Backup (.json)</label>
+              <input id="importBackupInput" type="file" accept=".json,application/json" class="tv-file-input focusable">
+            </div>
+            <div class="divider"><span>DATA MANAGEMENT</span></div>
+            <div class="form-actions">
+              <button id="clearDataBtn" class="btn btn-secondary focusable" tabindex="0">Clear Saved Playlist, EPG &amp; Favorites</button>
+              <button id="factoryResetBtn" class="btn btn-danger focusable" tabindex="0">Reset App to Factory Defaults</button>
+              <button id="confirmFactoryResetBtn" class="btn btn-danger focusable hidden" tabindex="0">Confirm Full Wipe</button>
+              <button id="cancelFactoryResetBtn" class="btn btn-secondary focusable hidden" tabindex="0">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Controls / Key Mapping Tab -->
+          <div id="tabControls" class="tab-pane">
+            <div class="controls-header-row">
+              <p class="helper-text">Bind any keyboard key, TV remote button, or gamepad input to player actions.</p>
+              <button id="resetKeyMapBtn" class="btn btn-secondary btn-sm focusable" tabindex="0">Reset Defaults</button>
+            </div>
+            <div id="keyCaptureBanner" class="key-capture-banner hidden" role="status" aria-live="polite">
+              <span id="keyCaptureText">Press any key or remote button...</span>
+              <button id="cancelKeyCaptureBtn" class="btn btn-secondary btn-sm focusable" tabindex="0">Cancel</button>
+            </div>
+            <div id="keyMapperList" class="key-mapper-list"></div>
+          </div>
+
+          <!-- Telegram Media Source Tab -->
+          <div id="tabTelegram" class="tab-pane">
+            <div class="tg-header-row">
+              <div>
+                <h3>Telegram Media Source</h3>
+                <p class="helper-text">Scan a QR code with your Telegram mobile app to stream videos from your subscribed channels.</p>
+              </div>
+              <span id="tgStatusBadge" class="tg-status-badge">Disconnected</span>
+            </div>
+
+            <div class="form-actions">
+              <button id="tgQrStartBtn" class="btn btn-primary focusable" tabindex="0">Connect with QR Code</button>
+              <button id="tgQrCancelBtn" class="btn btn-secondary focusable hidden" tabindex="0">Cancel</button>
+              <button id="tgLogoutBtn" class="btn btn-secondary focusable hidden" tabindex="0">Logout</button>
+            </div>
+
+            <div id="tgQrContainer" class="tg-verify-section hidden" style="margin-top:14px;">
+              <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+                <div id="tgQrSvgBox" style="width:220px;height:220px;background:#ffffff;padding:10px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;"></div>
+                <div style="flex:1;min-width:220px;">
+                  <div style="font-weight:700;font-size:16px;margin-bottom:8px;color:#f8fafc;">How to Link Device</div>
+                  <ol style="margin:0;padding-left:20px;color:#cbd5e1;line-height:1.6;font-size:14px;">
+                    <li>Open <strong>Telegram</strong> on your phone</li>
+                    <li>Go to <strong>Settings &rarr; Devices</strong></li>
+                    <li>Tap <strong>Link Desktop Device</strong></li>
+                    <li>Point your camera at this QR code</li>
+                  </ol>
+                  <p id="tgQrTimer" class="helper-text" style="margin-top:10px;"></p>
+                </div>
+              </div>
+            </div>
+
+            <div id="tgQrPasswordSection" class="tg-verify-section hidden" style="margin-top:14px;">
+              <div class="divider"><span>2FA CLOUD PASSWORD REQUIRED</span></div>
+              <div class="form-group">
+                <label for="tgPasswordInput">2FA Password</label>
+                <input id="tgPasswordInput" type="password" class="tv-input focusable" placeholder="Enter your Telegram 2FA cloud password">
+              </div>
+              <div class="form-actions">
+                <button id="tgQrPasswordBtn" class="btn btn-primary focusable" tabindex="0">Submit Password</button>
+              </div>
+            </div>
+
+            <div id="tgAuthStatus" class="helper-text" style="margin-top:10px;font-weight:600;"></div>
+            <p id="tgInlineStatus" class="helper-text"></p>
+          </div>
+
+          <!-- Network Folders Tab -->
+          <div id="tabNetShare" class="tab-pane">
+            <div class="form-group">
+              <label for="netshareNameInput">Display Name</label>
+              <input id="netshareNameInput" type="text" class="tv-input focusable" placeholder="e.g. NAS Movies or Living Room Share">
+            </div>
+            <div class="form-group">
+              <label for="netsharePathInput">Path or URL (SMB/UNC, Local Folder, or WebDAV)</label>
+              <input id="netsharePathInput" type="text" class="tv-input focusable" placeholder="\\SERVER\Movies, D:\Videos, or https://...">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="netshareUserInput">Username (Optional)</label>
+                <input id="netshareUserInput" type="text" class="tv-input focusable" placeholder="Username">
+              </div>
+              <div class="form-group">
+                <label for="netsharePassInput">Password (Optional)</label>
+                <div class="password-input-wrap">
+                  <input id="netsharePassInput" type="password" class="tv-input focusable" placeholder="Password">
+                  <button id="netsharePassToggleBtn" type="button" class="btn btn-secondary btn-sm focusable" tabindex="0">Show</button>
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button id="netshareAddBtn" type="button" class="btn btn-primary focusable" tabindex="0">Add Network Folder</button>
+            </div>
+            <div class="divider"><span>SAVED NETWORK FOLDERS</span></div>
+            <div id="netshareSavedList" class="configured-sources-list"></div>
+          </div>
+
+          <div id="settingsStatus" class="settings-status hidden"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Favorites Folder Manager Modal -->
+    <section id="favFolderModal" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="fav-modal-panel">
+        <div class="fav-modal-header">
+          <h2 id="favModalTitle">Favorite Folders</h2>
+          <div class="fav-folder-row-actions">
+            <button id="favRemoveItemBtn" class="btn btn-danger btn-sm focusable hidden" tabindex="0">Remove from Favorites</button>
+            <button id="favModalCloseBtn" class="btn btn-secondary btn-sm focusable" tabindex="0">Close</button>
+          </div>
+        </div>
+        <p id="favModalSubtitle" class="helper-text" dir="auto">Create, rename, or delete favorite folders.</p>
+        <div class="fav-create-row">
+          <input id="favNewFolderInput" type="text" class="tv-input focusable" placeholder="New folder name (e.g. Sports, News, Kids)" dir="auto" maxlength="40">
+          <button id="favCreateFolderBtn" class="btn btn-primary btn-sm focusable" tabindex="0">Create</button>
+        </div>
+        <p id="favFolderValidation" class="fav-validation hidden" role="alert"></p>
+        <div id="favFolderManagerList" class="fav-folder-manager-list"></div>
+      </div>
+    </section>
+
+    <!-- 4-Digit Parental PIN Modal -->
+    <section id="pinModal" class="modal-backdrop hidden" aria-hidden="true">
+      <div class="pin-panel">
+        <h2>Parental Lock</h2>
+        <p id="pinModalPrompt" class="helper-text">Enter your 4-digit PIN to unlock restricted content.</p>
+        <div id="pinDots" class="pin-dots">
+          <span class="pin-dot"></span>
+          <span class="pin-dot"></span>
+          <span class="pin-dot"></span>
+          <span class="pin-dot"></span>
+        </div>
+        <div id="pinErrorText" class="pin-error hidden">Incorrect PIN. Try again.</div>
+        <div id="pinKeypad" class="pin-keypad">
+          <button class="pin-key focusable" data-digit="1" tabindex="0">1</button>
+          <button class="pin-key focusable" data-digit="2" tabindex="0">2</button>
+          <button class="pin-key focusable" data-digit="3" tabindex="0">3</button>
+          <button class="pin-key focusable" data-digit="4" tabindex="0">4</button>
+          <button class="pin-key focusable" data-digit="5" tabindex="0">5</button>
+          <button class="pin-key focusable" data-digit="6" tabindex="0">6</button>
+          <button class="pin-key focusable" data-digit="7" tabindex="0">7</button>
+          <button class="pin-key focusable" data-digit="8" tabindex="0">8</button>
+          <button class="pin-key focusable" data-digit="9" tabindex="0">9</button>
+          <button class="pin-key focusable" data-action="clear" tabindex="0">Clear</button>
+          <button class="pin-key focusable" data-digit="0" tabindex="0">0</button>
+          <button class="pin-key focusable" data-action="cancel" tabindex="0">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scheduled DVR 2-Step Modal (Setup -> Final Confirmation) -->
+    <section id="dvrScheduleModal" class="modal-backdrop hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dvrModalTitle">
+      <div class="dvr-modal-panel">
+        <h2 id="dvrModalTitle">Schedule DVR Recording</h2>
+        <div id="dvrStepSetup" class="dvr-step">
+          <p id="dvrSetupProgramLabel" class="helper-text" dir="auto"></p>
+          <div class="form-group">
+            <label for="dvrSaveDirInput">Save Folder Path</label>
+            <input id="dvrSaveDirInput" type="text" class="tv-input focusable" placeholder="C:\Users\...\Videos\Recordings">
+          </div>
+          <div class="form-group">
+            <label for="dvrFileNameInput">Output Filename (.ts or .mp4)</label>
+            <input id="dvrFileNameInput" type="text" class="tv-input focusable" placeholder="Program_2026-11-18_20-00.ts">
+          </div>
+          <div class="dvr-modal-actions">
+            <button id="dvrSetupCancelBtn" class="btn btn-secondary focusable" tabindex="0">Cancel</button>
+            <button id="dvrSetupNextBtn" class="btn btn-primary focusable" tabindex="0">Next</button>
+          </div>
+        </div>
+        <div id="dvrStepConfirm" class="dvr-step hidden">
+          <p class="helper-text">Review your scheduled recording details:</p>
+          <div class="dvr-summary-box">
+            <div><span>Program</span><strong id="dvrConfirmProgram" dir="auto"></strong></div>
+            <div><span>Channel</span><strong id="dvrConfirmChannel" dir="auto"></strong></div>
+            <div><span>Day &amp; Date</span><strong id="dvrConfirmDate"></strong></div>
+            <div><span>Time</span><strong id="dvrConfirmTime"></strong></div>
+            <div><span>Full Save Path</span><strong id="dvrConfirmPath" dir="auto"></strong></div>
+          </div>
+          <div class="dvr-modal-actions">
+            <button id="dvrConfirmCancelBtn" class="btn btn-secondary focusable" tabindex="0">Cancel</button>
+            <button id="dvrConfirmSubmitBtn" class="btn btn-primary focusable" tabindex="0">Confirm Schedule</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cancel Scheduled DVR Recording Modal -->
+    <section id="dvrCancelModal" class="modal-backdrop hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="dvrCancelTitle">
+      <div class="dvr-modal-panel">
+        <h2 id="dvrCancelTitle">Cancel Scheduled Recording</h2>
+        <p class="helper-text">Are you sure you want to cancel this scheduled recording?</p>
+        <div class="dvr-summary-box">
+          <div><span>Program</span><strong id="dvrCancelProgram" dir="auto"></strong></div>
+          <div><span>Time</span><strong id="dvrCancelTime"></strong></div>
+          <div><span>File Path</span><strong id="dvrCancelPath" dir="auto"></strong></div>
+        </div>
+        <div class="dvr-modal-actions">
+          <button id="dvrKeepBtn" class="btn btn-secondary focusable" tabindex="0">Keep Recording</button>
+          <button id="dvrConfirmCancelRecordBtn" class="btn btn-danger focusable" tabindex="0">Confirm Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Exit Confirmation Modal -->
+    <section id="exitModal" class="modal-backdrop hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="exitModalTitle">
+      <div class="exit-modal-panel">
+        <h2 id="exitModalTitle">Exit Application</h2>
+        <p id="exitModalPrompt" class="helper-text">Are you sure you want to exit?</p>
+        <div class="exit-modal-actions">
+          <button id="exitCancelBtn" class="btn btn-secondary focusable" tabindex="0">Cancel</button>
+          <button id="exitConfirmBtn" class="btn btn-danger focusable" tabindex="0">Confirm</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  </div>
+
+  <script src="app.js?v=tactical3d"></script>
+</body>
+</html>
